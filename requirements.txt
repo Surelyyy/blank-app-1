@@ -1,5 +1,6 @@
 streamlit
 pandas
 nltk
+stopwords from nltk
 scikit-learn
 tensorflow
