@@ -14,7 +14,7 @@ nltk.download('punkt')
 nltk.download('stopwords')
 
 # Load Dataset (replace 'your_dataset.csv' with your actual file)
-data = pd.read_csv(r'M:\Study shit\Natural Language\Project\Combined_Data.csv')
+data = pd.read_csv(r'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKp00e2XC6CO64dGkVo8nOyD3FQgVjOho8W80U2L5XIsFyUFFl9_F8o8cburjfA20d2uw46q43Ei9l/pub?gid=1711183428&single=true&output=csv')
 
 # Assuming dataset has two columns: 'text' and 'label'
 X = data['statement']
@@ -46,3 +46,20 @@ def predict_sentiment(user_input):
     processed_input = vectorizer.transform([user_input])
     prediction = model.predict(processed_input)
     return prediction[0]
+
+# Streamlit UI
+st.title("Sentiment Prediction")
+user_input = st.text_input("Enter a statement to predict its sentiment:")
+
+# Add a button to trigger the prediction
+if st.button('Predict Sentiment'):
+    if user_input:  # Only predict if there is input
+        sentiment = predict_sentiment(user_input)
+        st.write(f"Predicted Sentiment: {sentiment}")
+    else:
+        st.write("Please enter a statement to predict the sentiment.")
+
+# Optionally, trigger prediction when the Enter key is pressed (streamlit default behavior)
+if user_input:
+    sentiment = predict_sentiment(user_input)
+    st.write(f"Predicted Sentiment: {sentiment}")
