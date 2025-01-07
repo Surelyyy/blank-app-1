@@ -6,12 +6,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
 
 import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-
 # Ensure NLTK resources are downloaded
 nltk.download('punkt')
 nltk.download('stopwords')
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+
+
 
 # Load Dataset (replace 'your_dataset.csv' with your actual file)
 data = pd.read_csv(r'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKp00e2XC6CO64dGkVo8nOyD3FQgVjOho8W80U2L5XIsFyUFFl9_F8o8cburjfA20d2uw46q43Ei9l/pub?gid=1711183428&single=true&output=csv')
