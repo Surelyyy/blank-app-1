@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 import nltk
+nltk.download('stopwords')
+nltk.download('punkt_tab')
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 
