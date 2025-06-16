@@ -1,19 +1,14 @@
-# 🎈 Blank app template
+# ♻️ Recycle Object Detection
 
-A simple Streamlit app template for you to modify!
+This Streamlit app lets users upload an image of waste and uses a YOLOv8 model
+to classify and count items in 7 recycle‐related categories.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+## Quickstart
 
-### How to run it on your own machine
+1. **Clone** this repo.
+2. **Place** your `best_recycle_model.pt` in the root.
+3. **Build & Run** with Docker:
 
-1. Install the requirements
-
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-2. Run the app
-
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+   ```bash
+   docker build -t recycle‑detector .
+   docker run -p 8501:8501 recycle‑detector
