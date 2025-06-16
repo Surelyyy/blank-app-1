@@ -35,28 +35,33 @@ if uploaded_file:
         result = roboflow_infer(temp_path, MODEL_ID, API_KEY)
 
     # Draw boxes
-    draw = ImageDraw.Draw(image)
-    detected_labels = []
-    for pred in result["predictions"]:
-        x, y, w, h = pred["x"], pred["y"], pred["width"], pred["height"]
-        left = x - w / 2
-        top = y - h / 2
-        right = x + w / 2
-        bottom = y + h / 2
-        label = pred["class"]
-        conf = pred["confidence"]
-        draw.rectangle([left, top, right, bottom], outline="lime", width=3)
-        draw.text((left, top - 10), f"{label} ({conf:.2f})", fill="lime")
-        detected_labels.append(label)
-
-    st.image(image, caption="Detection Results", use_column_width=True)
-
-    if detected_labels:
-        st.success("### Detected Items:")
-        for label in set(detected_labels):
-            st.markdown(f"- **{label.capitalize()}** × {detected_labels.count(label)}")
+    if "predictions" in result:
+        draw = ImageDraw.Draw(image)
+        detected_labels = []
+        for pred in result["predictions"]:
+            x, y, w, h = pred["x"], pred["y"], pred["width"], pred["height"]
+            left = x - w / 2
+            top = y - h / 2
+            right = x + w / 2
+            bottom = y + h / 2
+            label = pred["class"]
+            conf = pred["confidence"]
+            draw.rectangle([left, top, right, bottom], outline="lime", width=3)
+            draw.text((left, top - 10), f"{label} ({conf:.2f})", fill="lime")
+            detected_labels.append(label)
+    
+        st.image(image, caption="Detection Results", use_column_width=True)
+    
+        if detected_labels:
+            st.success("### Detected Items:")
+            for label in set(detected_labels):
+                st.markdown(f"- **{label.capitalize()}** × {detected_labels.count(label)}")
+        else:
+            st.warning("No recyclable objects detected.")
     else:
-        st.warning("No recyclable objects detected.")
+        st.error("❌ Roboflow API error or no predictions returned.")
+        st.json(result)  # Show raw response
+
 
 st.markdown("---")
 st.markdown("Made with ❤️ using Roboflow and Streamlit")
