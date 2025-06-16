@@ -1,54 +1,59 @@
-import os
-
-# ──────────────────────────────────────────────────────
-# Disable Streamlit’s file‑watcher and torch.classes introspection
-os.environ["STREAMLIT_SERVER_ENABLE_FILE_WATCHER"] = "false"
-import torch
-torch.classes.__path__ = []
-# ──────────────────────────────────────────────────────
-
 import streamlit as st
-from ultralytics import YOLO
-import numpy as np
 from PIL import Image
+import torch
+import os
+from ultralytics import YOLO
+import tempfile
 
-# — your 7 classes —
-CLASS_NAMES = ['glass', 'medical', 'metal', 'organic', 'paper', 'plastic', 'sharp-object']
-MODEL_WEIGHTS = "yolov8s.pt"  # make sure this file lives at the repo root
+# Set Streamlit page config
+st.set_page_config(page_title="Recycle Detection App", layout="centered")
 
+# Title
+st.title("♻️ Recycle Object Detection App")
+st.write("Upload an image to detect types of recyclable waste using YOLOv8.")
+
+# Load YOLOv8 model
 @st.cache_resource
 def load_model():
-    model = YOLO(MODEL_WEIGHTS)
-    model.names = {i: name for i, name in enumerate(CLASS_NAMES)}
+    model_path = "yolov8s.pt"
+    model = YOLO(model_path)
     return model
 
 model = load_model()
 
-st.title("♻️ Recycle Object Detection")
-st.write("Upload an image of waste, and let YOLOv8 sort it into:\n\n" +
-         ", ".join(CLASS_NAMES))
+# File uploader
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
-upload = st.file_uploader("Choose an image…", type=["jpg","jpeg","png"])
-if upload:
-    img = Image.open(upload).convert("RGB")
-    arr = np.array(img)
+# Detect button
+if uploaded_file is not None:
+    # Open image
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    with st.spinner("Detecting…"):
-        results = model.predict(source=arr, imgsz=640, conf=0.25)[0]
+    # Save to temp file for YOLO
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
+        image.save(temp_file.name)
+        temp_path = temp_file.name
 
-    # draw boxes
-    annotated = results.plot()
-    st.image(annotated, caption="Detections", use_column_width=True)
+    # Run detection
+    with st.spinner("Detecting..."):
+        results = model(temp_path)[0]
 
-    # summary
-    counts = {}
-    for b in results.boxes:
-        cid = int(b.cls.cpu().numpy())
-        counts[model.names[cid]] = counts.get(model.names[cid], 0) + 1
+    # Draw results
+    result_image = results.plot()  # returns numpy array with bounding boxes
+    st.image(result_image, caption="Detection Results", use_column_width=True)
 
-    if counts:
-        st.subheader("Summary")
-        for cls in CLASS_NAMES:
-            st.write(f"- **{cls}**: {counts.get(cls, 0)}")
+    # Display detected classes
+    class_names = model.names
+    detected_labels = [class_names[int(cls)] for cls in results.boxes.cls]
+    if detected_labels:
+        st.success("### Detected Items:")
+        for label in set(detected_labels):
+            count = detected_labels.count(label)
+            st.markdown(f"- **{label.capitalize()}** × {count}")
     else:
-        st.info("No objects detected. Try a different image or lower the confidence.")
+        st.warning("No recyclable objects detected.")
+
+# Footer
+st.markdown("---")
+st.markdown("Made with ❤️ using YOLOv8 and Streamlit")
