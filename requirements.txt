@@ -4,5 +4,4 @@ torch
 Pillow
 opencv-python-headless
 requests
-InferenceHTTPClient
-OpenCV
+
