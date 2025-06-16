@@ -1,59 +1,64 @@
 import streamlit as st
-from PIL import Image
-import torch
-import os
-from ultralytics import YOLO
+from PIL import Image, ImageDraw
 import tempfile
+from inference_sdk import InferenceHTTPClient
 
-# Set Streamlit page config
+# Roboflow model setup
+CLIENT = InferenceHTTPClient(
+    api_url="https://serverless.roboflow.com",
+    api_key="221fUCs3bTfBgfyCgZ2Z"
+)
+
+MODEL_ID = "recyclable-items/3"
+
+# Streamlit UI setup
 st.set_page_config(page_title="Recycle Detection App", layout="centered")
-
-# Title
 st.title("♻️ Recycle Object Detection App")
-st.write("Upload an image to detect types of recyclable waste using YOLOv8.")
-
-# Load YOLOv8 model
-@st.cache_resource
-def load_model():
-    model_path = "best.pt"
-    model = YOLO(model_path)
-    return model
-
-model = load_model()
+st.write("Upload an image to detect types of recyclable waste using Roboflow's API.")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
-# Detect button
+# Process image if uploaded
 if uploaded_file is not None:
-    # Open image
+    # Display uploaded image
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Save to temp file for YOLO
+    # Save to temporary file
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
         image.save(temp_file.name)
         temp_path = temp_file.name
 
-    # Run detection
+    # Send to Roboflow for inference
     with st.spinner("Detecting..."):
-        results = model(temp_path)[0]
+        result = CLIENT.infer(temp_path, model_id=MODEL_ID)
 
-    # Draw results
-    result_image = results.plot()  # returns numpy array with bounding boxes
-    st.image(result_image, caption="Detection Results", use_column_width=True)
+    # Draw bounding boxes
+    draw = ImageDraw.Draw(image)
+    detected_labels = []
+    for pred in result['predictions']:
+        x, y, w, h = pred['x'], pred['y'], pred['width'], pred['height']
+        class_name = pred['class']
+        confidence = pred['confidence']
 
-    # Display detected classes
-    class_names = model.names
-    detected_labels = [class_names[int(cls)] for cls in results.boxes.cls]
+        left = x - w / 2
+        top = y - h / 2
+        right = x + w / 2
+        bottom = y + h / 2
+
+        draw.rectangle([left, top, right, bottom], outline="lime", width=3)
+        draw.text((left, top - 10), f"{class_name} ({confidence:.2f})", fill="lime")
+        detected_labels.append(class_name)
+
+    # Display result image
+    st.image(image, caption="Detection Results", use_column_width=True)
+
+    # Display detected items
     if detected_labels:
         st.success("### Detected Items:")
         for label in set(detected_labels):
             count = detected_labels.count(label)
             st.markdown(f"- **{label.capitalize()}** × {count}")
     else:
-        st.warning("No recyclable objects detected.")
-
-# Footer
-st.markdown("---")
-st.markdown("Made with ❤️ using YOLOv8 and Streamlit")
+        st.warning("
