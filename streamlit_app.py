@@ -1,70 +1,54 @@
+import os
+
+# ──────────────────────────────────────────────────────
+# Disable Streamlit’s file‑watcher and torch.classes introspection
+os.environ["STREAMLIT_SERVER_ENABLE_FILE_WATCHER"] = "false"
+import torch
+torch.classes.__path__ = []
+# ──────────────────────────────────────────────────────
+
 import streamlit as st
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
 
-# --- CONFIG ---
-MODEL_WEIGHTS = "yolov8s.pt"  # path to your YOLOv8 .pt weights
+# — your 7 classes —
 CLASS_NAMES = ['glass', 'medical', 'metal', 'organic', 'paper', 'plastic', 'sharp-object']
+MODEL_WEIGHTS = "yolov8s.pt"  # make sure this file lives at the repo root
 
-# --- LOAD MODEL ---
 @st.cache_resource
-def load_model(weights_path):
-    model = YOLO(weights_path)
-    # replace model.names if you want to override any labels
+def load_model():
+    model = YOLO(MODEL_WEIGHTS)
     model.names = {i: name for i, name in enumerate(CLASS_NAMES)}
     return model
 
-model = load_model(MODEL_WEIGHTS)
+model = load_model()
 
-# --- STREAMLIT UI ---
 st.title("♻️ Recycle Object Detection")
-st.markdown(
-    """
-Upload an image of waste material, and the model will identify and count items in these categories:
-glass, medical, metal, organic, paper, plastic, sharp-object.
-"""
-)
+st.write("Upload an image of waste, and let YOLOv8 sort it into:\n\n" +
+         ", ".join(CLASS_NAMES))
 
-uploaded_file = st.file_uploader("Choose an image…", type=["jpg", "jpeg", "png"])
-if uploaded_file:
-    # Load image
-    image = Image.open(uploaded_file).convert("RGB")
-    img_array = np.array(image)
+upload = st.file_uploader("Choose an image…", type=["jpg","jpeg","png"])
+if upload:
+    img = Image.open(upload).convert("RGB")
+    arr = np.array(img)
 
-    # Run inference
-    with st.spinner("Running YOLOv8..."):
-        results = model.predict(source=img_array, imgsz=640, conf=0.25, device=0)[0]
+    with st.spinner("Detecting…"):
+        results = model.predict(source=arr, imgsz=640, conf=0.25)[0]
 
-    # Annotate and display image
-    annotated = results.plot()  # returns np.ndarray with boxes+labels drawn
-    st.image(annotated, caption="Detected objects", use_column_width=True)
+    # draw boxes
+    annotated = results.plot()
+    st.image(annotated, caption="Detections", use_column_width=True)
 
-    # Summarize detections
+    # summary
     counts = {}
-    for box in results.boxes:
-        cls_id = int(box.cls.cpu().numpy())
-        name = model.names[cls_id]
-        counts[name] = counts.get(name, 0) + 1
+    for b in results.boxes:
+        cid = int(b.cls.cpu().numpy())
+        counts[model.names[cid]] = counts.get(model.names[cid], 0) + 1
 
     if counts:
-        st.subheader("Detections Summary")
+        st.subheader("Summary")
         for cls in CLASS_NAMES:
-            cnt = counts.get(cls, 0)
-            st.write(f"- **{cls.capitalize():12s}** : {cnt}")
+            st.write(f"- **{cls}**: {counts.get(cls, 0)}")
     else:
-        st.info("No objects detected. Try a different image or lower the confidence threshold.")
-
-    # Optional: show raw confidence scores
-    if st.checkbox("Show raw detections"):
-        st.table([
-            {
-                "class": model.names[int(box.cls.cpu().numpy())],
-                "confidence": float(box.conf.cpu().numpy().round(3)),
-                "x1": int(box.xyxy[0][0]),
-                "y1": int(box.xyxy[0][1]),
-                "x2": int(box.xyxy[0][2]),
-                "y2": int(box.xyxy[0][3]),
-            }
-            for box in results.boxes
-        ])
+        st.info("No objects detected. Try a different image or lower the confidence.")
