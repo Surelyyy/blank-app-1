@@ -61,4 +61,8 @@ if uploaded_file is not None:
             count = detected_labels.count(label)
             st.markdown(f"- **{label.capitalize()}** × {count}")
     else:
-        st.warning("
+        st.warning("No recyclable objects detected.")
+
+# Footer
+st.markdown("---")
+st.markdown("Made with ❤️ using Roboflow and Streamlit")
