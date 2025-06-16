@@ -7,12 +7,14 @@ import requests
 MODEL_ID = "recyclable-items/3"
 API_KEY = "221fUCs3bTfBgfyCgZ2Z"
 
-# Roboflow API request
 def roboflow_infer(image_path, model_id, api_key):
-    url = f"https://infer.roboflow.com/{model_id}?api_key={api_key}"
+    url = f"https://infer.roboflow.com/{model_id}?api_key={api_key}&confidence=0.4"
     with open(image_path, "rb") as f:
         response = requests.post(url, files={"file": f})
-    return response.json()
+    try:
+        return response.json()
+    except Exception as e:
+        return {"error": f"Failed to parse JSON: {e}"}
 
 # Streamlit UI
 st.set_page_config(page_title="Recycle Detection App", layout="centered")
@@ -34,10 +36,15 @@ if uploaded_file:
     with st.spinner("Detecting..."):
         result = roboflow_infer(temp_path, MODEL_ID, API_KEY)
 
-    # Draw boxes
+    # Debug: Show raw API response
+    st.subheader("🔍 Raw Roboflow API Response")
+    st.json(result)
+
+    # Safe check for predictions
     if "predictions" in result:
         draw = ImageDraw.Draw(image)
         detected_labels = []
+
         for pred in result["predictions"]:
             x, y, w, h = pred["x"], pred["y"], pred["width"], pred["height"]
             left = x - w / 2
@@ -46,12 +53,13 @@ if uploaded_file:
             bottom = y + h / 2
             label = pred["class"]
             conf = pred["confidence"]
+
             draw.rectangle([left, top, right, bottom], outline="lime", width=3)
             draw.text((left, top - 10), f"{label} ({conf:.2f})", fill="lime")
             detected_labels.append(label)
-    
+
         st.image(image, caption="Detection Results", use_column_width=True)
-    
+
         if detected_labels:
             st.success("### Detected Items:")
             for label in set(detected_labels):
@@ -59,9 +67,4 @@ if uploaded_file:
         else:
             st.warning("No recyclable objects detected.")
     else:
-        st.error("❌ Roboflow API error or no predictions returned.")
-        st.json(result)  # Show raw response
-
-
-st.markdown("---")
-st.markdown("Made with ❤️ using Roboflow and Streamlit")
+        st.error("❌ Roboflow API did not return predictions. Check credentials, model ID, or API status.")
