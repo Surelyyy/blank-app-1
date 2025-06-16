@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 # --- CONFIG ---
-MODEL_WEIGHTS = "best_recycle_model.pt"  # path to your YOLOv8 .pt weights
+MODEL_WEIGHTS = "yolov8s.pt"  # path to your YOLOv8 .pt weights
 CLASS_NAMES = ['glass', 'medical', 'metal', 'organic', 'paper', 'plastic', 'sharp-object']
 
 # --- LOAD MODEL ---
