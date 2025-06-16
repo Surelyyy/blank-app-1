@@ -15,7 +15,7 @@ st.write("Upload an image to detect types of recyclable waste using YOLOv8.")
 # Load YOLOv8 model
 @st.cache_resource
 def load_model():
-    model_path = "best.pt"
+    model_path = "yolov8s.pt"
     model = YOLO(model_path)
     return model
 
